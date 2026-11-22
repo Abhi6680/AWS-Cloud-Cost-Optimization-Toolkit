@@ -13,6 +13,12 @@ aws configure --profile ebs-toolkit
 python run_local.py --profile ebs-toolkit --region <your-region>   # DRY-RUN
 ```
 
+## Safety notes
+- The toolkit runs in dry-run mode by default; no resources are deleted in this mode.
+- Review the report before enabling live cleanup.
+- Use a dedicated IAM role with only the permissions required for the selected actions.
+- Keep production and backup-managed resources protected by tags and retention policies.
+
 ## Configuration (environment variables)
 | Variable | Default | Meaning |
 |---|---|---|
