@@ -1,0 +1,32 @@
+"""Discovery: read-only calls that find candidate resources."""
+
+
+def find_unattached_volumes(ec2) -> list[dict]:
+    """Volumes in 'available' state are not attached to any instance."""
+    volumes = []
+    paginator = ec2.get_paginator("describe_volumes")
+    for page in paginator.paginate(
+        Filters=[{"Name": "status", "Values": ["available"]}]
+    ):
+        volumes.extend(page["Volumes"])
+    return volumes
+
+
+def find_own_snapshots(ec2) -> list[dict]:
+    """Only snapshots owned by this account (not public/shared ones)."""
+    snapshots = []
+    paginator = ec2.get_paginator("describe_snapshots")
+    for page in paginator.paginate(OwnerIds=["self"]):
+        snapshots.extend(page["Snapshots"])
+    return snapshots
+
+
+def get_ami_snapshot_ids(ec2) -> set[str]:
+    """Snapshot IDs used by our AMIs. These cannot be deleted while the AMI exists."""
+    ids = set()
+    for image in ec2.describe_images(Owners=["self"])["Images"]:
+        for mapping in image.get("BlockDeviceMappings", []):
+            snap_id = mapping.get("Ebs", {}).get("SnapshotId")
+            if snap_id:
+                ids.add(snap_id)
+    return ids
