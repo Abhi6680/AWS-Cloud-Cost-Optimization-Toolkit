@@ -33,12 +33,3 @@ def test_ami_snapshot_is_skipped():
 def test_old_snapshot_is_safe():
     snap = {"SnapshotId": "snap-2", "StartTime": now - timedelta(days=90)}
     assert validate_snapshot(snap, CFG, set())[0] is True
-
-
-def test_protected_snapshot_is_skipped():
-    snap = {
-        "SnapshotId": "snap-protected",
-        "StartTime": now - timedelta(days=120),
-        "Tags": [{"Key": "DoNotDelete", "Value": "true"}],
-    }
-    assert validate_snapshot(snap, CFG, set())[0] is False

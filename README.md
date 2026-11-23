@@ -13,12 +13,6 @@ aws configure --profile ebs-toolkit
 python run_local.py --profile ebs-toolkit --region <your-region>   # DRY-RUN
 ```
 
-## Safety notes
-- The toolkit runs in dry-run mode by default; no resources are deleted in this mode.
-- Review the report before enabling live cleanup.
-- Use a dedicated IAM role with only the permissions required for the selected actions.
-- Keep production and backup-managed resources protected by tags and retention policies.
-
 ## Configuration (environment variables)
 | Variable | Default | Meaning |
 |---|---|---|
@@ -26,9 +20,12 @@ python run_local.py --profile ebs-toolkit --region <your-region>   # DRY-RUN
 | VOLUME_MIN_AGE_DAYS | 7 | Skip volumes newer than this |
 | SNAPSHOT_RETENTION_DAYS | 30 | Snapshots older than this are candidates |
 | PROTECT_TAG_KEY | DoNotDelete | Tag `<key>=true` protects a resource |
+| VOLUME_PRICE_PER_GB | 0.08 | Estimate price, USD per GB-month |
+| SNAPSHOT_PRICE_PER_GB | 0.05 | Estimate price, USD per GB-month |
 
 ## Roadmap
 - [x] Discovery, validation, dry-run, Lambda handler
+- [x] Estimated monthly cost in report
 - [ ] Least-privilege IAM policy
 - [ ] Deploy to Lambda
 - [ ] EventBridge schedule
