@@ -1,0 +1,20 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowDelete",
+      "Effect": "Allow",
+      "Action": ["ec2:DeleteVolume", "ec2:DeleteSnapshot"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "NeverDeleteProtected",
+      "Effect": "Deny",
+      "Action": ["ec2:DeleteVolume", "ec2:DeleteSnapshot"],
+      "Resource": "*",
+      "Condition": {
+        "StringEqualsIgnoreCase": { "aws:ResourceTag/DoNotDelete": "true" }
+      }
+    }
+  ]
+}

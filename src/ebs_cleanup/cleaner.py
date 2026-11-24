@@ -4,7 +4,13 @@ import logging
 from botocore.exceptions import ClientError
 
 from .config import Config
-from .discovery import find_own_snapshots, find_unattached_volumes, get_ami_snapshot_ids
+from .discovery import (
+    find_own_snapshots,
+    find_unattached_volumes,
+    get_ami_snapshot_ids,
+    get_existing_volume_ids,
+    is_orphaned_snapshot,
+)
 from .validator import validate_snapshot, validate_volume
 
 logger = logging.getLogger(__name__)
@@ -41,13 +47,19 @@ def run_cleanup(ec2, config: Config) -> dict:
     for vol in find_unattached_volumes(ec2):
         safe, reason = validate_volume(vol, config)
         items.append({"type": "volume", "id": vol["VolumeId"],
-                      "size_gb": vol["Size"], "safe": safe, "reason": reason})
+                      "size_gb": vol["Size"], "safe": safe, "reason": reason,
+                      "orphaned": False})
 
     ami_ids = get_ami_snapshot_ids(ec2)
+    existing_volumes = get_existing_volume_ids(ec2)
     for snap in find_own_snapshots(ec2):
         safe, reason = validate_snapshot(snap, config, ami_ids)
+        orphaned = is_orphaned_snapshot(snap, existing_volumes)
+        if safe and orphaned:
+            reason += ", source volume no longer exists"
         items.append({"type": "snapshot", "id": snap["SnapshotId"],
-                      "size_gb": snap["VolumeSize"], "safe": safe, "reason": reason})
+                      "size_gb": snap["VolumeSize"], "safe": safe,
+                      "reason": reason, "orphaned": orphaned})
 
     for item in items:
         item["est_monthly_cost_usd"] = estimate_monthly_cost(item, config)
@@ -66,6 +78,7 @@ def run_cleanup(ec2, config: Config) -> dict:
         "total_examined": len(items),
         "deletable": len(deletable),
         "deletable_size_gb": sum(i["size_gb"] for i in deletable),
+        "orphaned_snapshots": sum(1 for i in items if i["orphaned"]),
         "deleted": sum(1 for i in items if i["action"] == "deleted"),
         "est_monthly_savings_usd": round(
             sum(i["est_monthly_cost_usd"] for i in deletable), 2),

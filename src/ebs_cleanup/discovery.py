@@ -30,3 +30,21 @@ def get_ami_snapshot_ids(ec2) -> set[str]:
             if snap_id:
                 ids.add(snap_id)
     return ids
+
+
+def get_existing_volume_ids(ec2) -> set[str]:
+    """IDs of all volumes that currently exist (attached or not)."""
+    ids = set()
+    paginator = ec2.get_paginator("describe_volumes")
+    for page in paginator.paginate():
+        ids.update(v["VolumeId"] for v in page["Volumes"])
+    return ids
+
+
+def is_orphaned_snapshot(snapshot: dict, existing_volume_ids: set[str]) -> bool:
+    """True if the snapshot's source volume no longer exists.
+    Copied snapshots report 'vol-ffffffff' (no real source), so we ignore those."""
+    source = snapshot.get("VolumeId")
+    if not source or source == "vol-ffffffff":
+        return False
+    return source not in existing_volume_ids
